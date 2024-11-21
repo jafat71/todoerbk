@@ -3,19 +3,21 @@ package main
 import (
 	"log"
 	"net/http"
+	"todoerbk/handlers"
 )
 
 func main() {
-	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
-		_, err := w.Write([]byte("Hello World"))
-		if err != nil {
-			log.Fatal(err)
-		}
-	})
+	router := http.NewServeMux()
 
-	if err := http.ListenAndServe(":8080", mux); err != nil {
+	router.HandleFunc("GET /", handlers.Root)
+
+	router.HandleFunc("POST /task", handlers.HandleCreateTask)
+
+	port := ":8080"
+	log.Println("GO SERVER RUNNING ON PORT ", port)
+
+	if err := http.ListenAndServe(port, router); err != nil {
 		log.Fatal(err)
 	}
 }
