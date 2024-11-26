@@ -6,3 +6,9 @@ type Task struct {
 	Doing bool   `json:"doing"`
 	Done  bool   `json:"done"`
 }
+
+type TaskUpdate struct {
+	Title string `json:"title" validate:"required,min=4"`
+	Doing bool   `json:"doing"`
+	Done  bool   `json:"done"`
+}

@@ -5,22 +5,41 @@ import (
 	"net/http"
 	"todoerbk/handlers"
 	"todoerbk/middlewares"
+
+	"github.com/gorilla/mux"
 )
 
 func main() {
-	router := http.NewServeMux()
+	router := mux.NewRouter()
 
-	router.HandleFunc("/", handlers.Root)
+	router.HandleFunc("/", handlers.Root).Methods("GET")
 
-	router.Handle("POST /tasks",
+	router.Handle("/tasks",
 		middlewares.DecodeTask(
 			middlewares.ValidateTask(
 				http.HandlerFunc(handlers.CreateTask),
 			),
 		),
-	)
-	router.Handle("GET /tasks", http.HandlerFunc(handlers.GetTasks))
+	).Methods("POST")
 
+	router.Handle("/tasks", http.HandlerFunc(handlers.GetTasks)).Methods("GET")
+	router.Handle("/tasks/{id}",
+		middlewares.ValidateTaskIdFromParams(
+			http.HandlerFunc(handlers.GetTaskById),
+		),
+	).Methods("GET")
+
+	router.Handle("/tasks/{id}",
+		middlewares.DecodeTaskUpdate(
+			middlewares.ValidateTaskUpdate(
+				middlewares.ValidateTaskIdFromParams(
+					http.HandlerFunc(handlers.UpdateTask),
+				),
+			),
+		),
+	).Methods("PUT")
+
+	//TODo: DELETE + ORM - MONGO
 	port := ":8080"
 	log.Println("GO SERVER RUNNING ON PORT", port)
 
