@@ -39,6 +39,12 @@ func main() {
 		),
 	).Methods("PUT")
 
+	router.Handle("/tasks/{id}",
+		middlewares.ValidateTaskIdFromParams(
+			http.HandlerFunc(handlers.DeleteTaskByID),
+		),
+	).Methods("DELETE")
+
 	//TODo: DELETE + ORM - MONGO
 	port := ":8080"
 	log.Println("GO SERVER RUNNING ON PORT", port)

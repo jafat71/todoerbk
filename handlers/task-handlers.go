@@ -100,3 +100,23 @@ func UpdateTask(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
 }
+
+func DeleteTaskByID(w http.ResponseWriter, r *http.Request) {
+	taskId := mux.Vars(r)["id"]
+	taskToDelete, found, index := findTaskById(taskId)
+	if !found {
+		http.Error(w, "Task to delete not found", http.StatusNotFound)
+		return
+	}
+
+	data.Tasks = append(data.Tasks[:index], data.Tasks[index+1:]...)
+
+	response := map[string]interface{}{
+		"success": true,
+		"message": "Task deleted successfully",
+		"task":    taskToDelete,
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
