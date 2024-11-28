@@ -2,9 +2,11 @@ package services
 
 import (
 	"context"
+	"errors"
 	"todoerbk/models"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -22,13 +24,22 @@ func (s *TaskService) CreateTask(ctx context.Context, task *models.Task) error {
 }
 
 func (s *TaskService) DeleteTask(ctx context.Context, id string) error {
-	_, err := s.db.DeleteOne(ctx, bson.M{"_id": id})
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return errors.New("invalid task id")
+	}
+	_, err = s.db.DeleteOne(ctx, bson.M{"_id": objID})
 	return err
 }
 
 func (s *TaskService) GetTaskById(ctx context.Context, id string) (*models.Task, error) {
 	var task models.Task
-	err := s.db.FindOne(ctx, bson.M{"_id": id}).Decode(&task)
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, errors.New("invalid task id")
+	}
+
+	err = s.db.FindOne(ctx, bson.M{"_id": objID}).Decode(&task)
 	return &task, err
 }
 
@@ -50,7 +61,11 @@ func (s *TaskService) GetTasks(ctx context.Context) ([]models.Task, error) {
 	return tasks, nil
 }
 
-func (s *TaskService) UpdateTask(ctx context.Context, task *models.Task) error {
-	_, err := s.db.UpdateOne(ctx, bson.M{"_id": task.Id}, bson.M{"$set": task})
+func (s *TaskService) UpdateTask(ctx context.Context, id string, task models.Task) error {
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return errors.New("invalid task id")
+	}
+	_, err = s.db.UpdateOne(ctx, bson.M{"_id": objID}, bson.M{"$set": task})
 	return err
 }

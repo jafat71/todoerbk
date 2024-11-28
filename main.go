@@ -1,25 +1,21 @@
 package main
 
 import (
-	"context"
 	"log"
 	"net/http"
 	"os"
-	"time"
 
+	"todoerbk/database"
 	"todoerbk/handlers"
-	"todoerbk/middlewares"
+	"todoerbk/routes"
 	"todoerbk/services"
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func main() {
 
-	//TODO: REVISAR MODELO + INTERACTION CON MONGO
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error al cargar el archivo .env")
@@ -35,65 +31,31 @@ func main() {
 		log.Fatal("MONGO_URL no está configurado en el archivo .env")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	db, client, ctx, cancel := database.SetupMongoDB(mongoURL)
+	defer database.CloseConnection(client, ctx, cancel)
 
-	clientOptions := options.Client().ApplyURI(mongoURL)
-
-	client, err := mongo.Connect(ctx, clientOptions)
-	if err != nil {
-		log.Fatalf("Error al conectar a MongoDB: %v", err)
-	}
-
-	if err := client.Ping(ctx, nil); err != nil {
-		log.Fatalf("No se pudo hacer ping al servidor MongoDB: %v", err)
-	}
-
-	log.Println("-*-*-*-*-*-Conexión exitosa a MongoDB-*-*-*-*-")
-
-	db := client.Database("todoer")
 	taskCollection := db.Collection("tasks")
-
 	taskService := services.NewTaskService(taskCollection)
-	taskHandler := handlers.TaskHandler{Service: *taskService}
+	taskController := handlers.NewTaskHandler(taskService)
 
 	router := mux.NewRouter()
+	apiRouter := router.PathPrefix("/api/v1").Subrouter()
+	taskRouter := apiRouter.PathPrefix("/tasks").Subrouter()
+	routes.TaskRouter(taskRouter, taskController)
 
 	router.HandleFunc("/", handlers.Root).Methods("GET")
 
-	router.Handle("/tasks",
-		middlewares.DecodeTask(
-			middlewares.ValidateTask(
-				http.HandlerFunc(taskHandler.CreateTask),
-			),
-		),
-	).Methods("POST")
-
-	router.Handle("/tasks",
-		http.HandlerFunc(taskHandler.GetTasks),
-	).Methods("GET")
-
-	router.Handle("/tasks/{id}",
-		middlewares.ValidateTaskIdFromParams(
-			http.HandlerFunc(taskHandler.GetTaskById),
-		),
-	).Methods("GET")
-
-	router.Handle("/tasks/{id}",
-		middlewares.DecodeTaskUpdate(
-			middlewares.ValidateTaskUpdate(
-				middlewares.ValidateTaskIdFromParams(
-					http.HandlerFunc(taskHandler.UpdateTask),
-				),
-			),
-		),
-	).Methods("PUT")
-
-	router.Handle("/tasks/{id}",
-		middlewares.ValidateTaskIdFromParams(
-			http.HandlerFunc(taskHandler.DeleteTaskByID),
-		),
-	).Methods("DELETE")
+	err = router.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
+		path, err := route.GetPathTemplate()
+		if err != nil {
+			return err
+		}
+		log.Println("Registered route:", path)
+		return nil
+	})
+	if err != nil {
+		log.Println("Error walking routes:", err)
+	}
 
 	log.Println("GO SERVER RUNNING ON PORT", port)
 

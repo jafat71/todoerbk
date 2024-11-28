@@ -4,35 +4,39 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 	"todoerbk/middlewares"
 	"todoerbk/models"
 	"todoerbk/services"
 
 	"github.com/gorilla/mux"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type TaskHandler struct {
-	Service services.TaskService
+	Service *services.TaskService
 }
 
-func (h *TaskHandler) NewTaskHandler(service services.TaskService) *TaskHandler {
+func NewTaskHandler(service *services.TaskService) *TaskHandler {
 	return &TaskHandler{Service: service}
 }
 
 func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 	task, ok := r.Context().Value(middlewares.TaskKey).(models.Task)
+
 	if !ok {
 		http.Error(w, "Unable to process task. Check Server", http.StatusInternalServerError)
 		return
 	}
-
-	//data.Tasks = append(data.Tasks, task)
+	task.ID = primitive.NewObjectID()
+	now := time.Now().UTC()
+	task.CreatedAt = now
+	task.UpdatedAt = now
 	err := h.Service.CreateTask(r.Context(), &task)
 	if err != nil {
 		http.Error(w, "Unable to create task. Check Server", http.StatusInternalServerError)
 		return
 	}
-	log.Println("TASK CREATED:", task)
 
 	response := map[string]interface{}{
 		"success": true,
@@ -50,6 +54,10 @@ func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "Unable to get tasks. Check Server", http.StatusInternalServerError)
 		return
+	}
+
+	if tasks == nil {
+		tasks = []models.Task{}
 	}
 
 	response := map[string]interface{}{
@@ -82,19 +90,28 @@ func (h *TaskHandler) GetTaskById(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
-	taskUpdateBody, ok := r.Context().Value(middlewares.TaskUpdateKey).(models.TaskUpdate)
+	taskUpdateBody, ok := r.Context().Value(middlewares.TaskKey).(models.Task)
 	if !ok {
 		http.Error(w, "Unable to process task to update. Check Server", http.StatusInternalServerError)
 		return
 	}
 	taskId := mux.Vars(r)["id"]
 	taskToUpdate, err := h.Service.GetTaskById(r.Context(), taskId)
+	if err != nil {
+		http.Error(w, "Task to update not found", http.StatusNotFound)
+		return
+	}
 
+	log.Println("UPDATE BODY:", taskUpdateBody)
 	taskToUpdate.Title = taskUpdateBody.Title
 	taskToUpdate.Doing = taskUpdateBody.Doing
 	taskToUpdate.Done = taskUpdateBody.Done
 
-	h.Service.UpdateTask(r.Context(), taskToUpdate)
+	log.Println("UPDATING TASK:", taskToUpdate)
+	now := time.Now().UTC()
+	taskToUpdate.UpdatedAt = now
+
+	err = h.Service.UpdateTask(r.Context(), taskId, *taskToUpdate)
 	if err != nil {
 		http.Error(w, "Task to update not found", http.StatusNotFound)
 		return
@@ -117,8 +134,7 @@ func (h *TaskHandler) DeleteTaskByID(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Task to delete not found", http.StatusNotFound)
 		return
 	}
-
-	err = h.Service.DeleteTask(r.Context(), taskToDelete.Id)
+	err = h.Service.DeleteTask(r.Context(), taskToDelete.ID.Hex())
 	if err != nil {
 		http.Error(w, "Task to delete not found", http.StatusNotFound)
 		return
@@ -132,12 +148,3 @@ func (h *TaskHandler) DeleteTaskByID(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
 }
-
-// func findTaskById(taskId string) (models.Task, bool, int) {
-// 	for index, task := range data.Tasks {
-// 		if task.Id == taskId {
-// 			return task, true, index
-// 		}
-// 	}
-// 	return models.Task{}, false, -1
-// }
