@@ -10,6 +10,7 @@ import (
 	"todoerbk/routes"
 	"todoerbk/services"
 
+	gorillaHandlers "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 )
@@ -59,7 +60,13 @@ func main() {
 
 	log.Println("GO SERVER RUNNING ON PORT", port)
 
-	if err := http.ListenAndServe(port, router); err != nil {
+	corsOptions := gorillaHandlers.CORS(
+		gorillaHandlers.AllowedOrigins([]string{"http://localhost:5173"}),
+		gorillaHandlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}),
+		gorillaHandlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
+	)
+
+	if err := http.ListenAndServe(port, corsOptions(router)); err != nil {
 		log.Fatal(err)
 	}
 }

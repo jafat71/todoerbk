@@ -21,10 +21,6 @@ func NewTaskHandler(service *services.TaskService) *TaskHandler {
 	return &TaskHandler{Service: service}
 }
 
-func enableCors(w *http.ResponseWriter) {
-	(*w).Header().Set("Access-Control-Allow-Origin", "*")
-}
-
 func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 	task, ok := r.Context().Value(middlewares.TaskKey).(models.Task)
 
@@ -54,8 +50,6 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
-	enableCors(&w)
-
 	tasks, err := h.Service.GetTasks(r.Context())
 	if err != nil {
 		http.Error(w, "Unable to get tasks. Check Server", http.StatusInternalServerError)
@@ -73,7 +67,7 @@ func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
 }
 

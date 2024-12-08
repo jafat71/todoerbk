@@ -71,10 +71,14 @@ func ValidateTask(next http.Handler) http.Handler {
 		err := validate.Struct(task)
 		if err != nil {
 			responseErrors := getAllValidationErrs(err)
+			w.Header().Set("Content-Type", "application/json") // Asegúrate de establecer el tipo de contenido
 			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(map[string]interface{}{
-				"errors": responseErrors,
-			})
+			response := map[string]interface{}{
+				"success": false,
+				"message": "Error in task creation",
+				"errors":  responseErrors,
+			}
+			json.NewEncoder(w).Encode(response)
 			return
 		}
 
