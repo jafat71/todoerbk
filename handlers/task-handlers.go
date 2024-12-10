@@ -32,6 +32,12 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 	now := time.Now().UTC()
 	task.CreatedAt = now
 	task.UpdatedAt = now
+	if task.Status == "" {
+		task.Status = models.TODO
+	}
+	if task.Priority == "" {
+		task.Priority = models.LOW
+	}
 	err := h.Service.CreateTask(r.Context(), &task)
 	if err != nil {
 		http.Error(w, "Unable to create task. Check Server", http.StatusInternalServerError)
@@ -102,11 +108,13 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Println("UPDATE BODY:", taskUpdateBody)
 	taskToUpdate.Title = taskUpdateBody.Title
-	taskToUpdate.Doing = taskUpdateBody.Doing
-	taskToUpdate.Done = taskUpdateBody.Done
-
+	if taskUpdateBody.Status != "" {
+		taskToUpdate.Status = taskUpdateBody.Status
+	}
+	if taskUpdateBody.Priority != "" {
+		taskToUpdate.Priority = taskUpdateBody.Priority
+	}
 	log.Println("UPDATING TASK:", taskToUpdate)
 	now := time.Now().UTC()
 	taskToUpdate.UpdatedAt = now

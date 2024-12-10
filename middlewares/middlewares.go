@@ -71,12 +71,33 @@ func ValidateTask(next http.Handler) http.Handler {
 		err := validate.Struct(task)
 		if err != nil {
 			responseErrors := getAllValidationErrs(err)
-			w.Header().Set("Content-Type", "application/json") // Asegúrate de establecer el tipo de contenido
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
 			response := map[string]interface{}{
 				"success": false,
-				"message": "Error in task creation",
+				"message": "Error in task model validation",
 				"errors":  responseErrors,
+			}
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+
+		if task.Status != "" && !task.Status.IsValid() {
+			w.WriteHeader(http.StatusBadRequest)
+			response := map[string]interface{}{
+				"success": false,
+				"message": "Error in task model validation",
+				"errors":  []string{"Invalid Task Status. < field: status, value: TODO, DOING, DONE >"},
+			}
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+		if task.Priority != "" && !task.Priority.IsValid() {
+			w.WriteHeader(http.StatusBadRequest)
+			response := map[string]interface{}{
+				"success": false,
+				"message": "Error in task model validation",
+				"errors":  []string{"Invalid Task Priority. < field: priority, value: LOW, MEDIUM, HIGH >"},
 			}
 			json.NewEncoder(w).Encode(response)
 			return
@@ -93,7 +114,8 @@ func ValidateModelIdFromParams(next http.Handler) http.Handler {
 			http.Error(w, "Model ID is required", http.StatusBadRequest)
 			return
 		}
-		if !primitive.IsValidObjectID(modelId) {
+		_, err := primitive.ObjectIDFromHex(modelId)
+		if err != nil {
 			http.Error(w, "Invalid Model ID", http.StatusBadRequest)
 			return
 		}
