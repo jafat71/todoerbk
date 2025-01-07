@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"todoerbk/database"
 	"todoerbk/handlers"
@@ -39,10 +40,18 @@ func main() {
 	taskService := services.NewTaskService(taskCollection)
 	taskController := handlers.NewTaskHandler(taskService)
 
+	boardCollection := db.Collection("boards")
+	boardService := services.NewBoardService(boardCollection)
+	boardController := handlers.NewBoardHandler(boardService)
+
 	router := mux.NewRouter()
 	apiRouter := router.PathPrefix("/api/v1").Subrouter()
+
 	taskRouter := apiRouter.PathPrefix("/tasks").Subrouter()
 	routes.TaskRouter(taskRouter, taskController)
+
+	boardRouter := apiRouter.PathPrefix("/boards").Subrouter()
+	routes.BoardRouter(boardRouter, boardController)
 
 	router.HandleFunc("/", handlers.Root).Methods("GET")
 
@@ -51,7 +60,13 @@ func main() {
 		if err != nil {
 			return err
 		}
-		log.Println("Registered route:", path)
+
+		methods, err := route.GetMethods()
+		if err != nil || len(methods) == 0 {
+			methods = []string{"ANY"}
+		}
+
+		log.Printf("Registered route: %s %s", strings.Join(methods, ", "), path)
 		return nil
 	})
 	if err != nil {

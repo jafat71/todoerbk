@@ -37,4 +37,17 @@ type Task struct {
 	Title     string             `json:"title" bson:"title" validate:"min=4"`
 	Status    TaskStatus         `json:"status" bson:"status"`
 	Priority  TaskPriority       `json:"priority" bson:"priority"`
+	BoardID   primitive.ObjectID `json:"board_id" bson:"board_id" validate:"required"`
+}
+
+// Board Model -- Set of tasks for a specific time period
+type Board struct {
+	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	CreatedAt time.Time          `bson:"created_at" json:"created_at"`
+	UpdatedAt time.Time          `bson:"updated_at" json:"updated_at"`
+	Title     string             `json:"title" bson:"title" validate:"min=4"`
+	FromDate  time.Time          `json:"from_date" bson:"from_date" validate:"required" ` //validar que sea una fecha valida
+	ToDate    time.Time          `json:"to_date" bson:"to_date" validate:"required"`      //validar que sea una fecha valida y posterior a la fecha de inicio
+	Completed bool               `json:"completed" bson:"completed" default:"false"`
+	Tasks     []Task             `json:"tasks" bson:"tasks"` // on Delete Cascade
 }

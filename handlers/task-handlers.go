@@ -28,6 +28,9 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unable to process task. Check Server", http.StatusInternalServerError)
 		return
 	}
+
+	//TODO: validar que el board exista
+
 	task.ID = primitive.NewObjectID()
 	now := time.Now().UTC()
 	task.CreatedAt = now
