@@ -14,11 +14,12 @@ import (
 )
 
 type BoardHandler struct {
-	Service *services.BoardService
+	Service     *services.BoardService
+	TaskService *services.TaskService
 }
 
-func NewBoardHandler(service *services.BoardService) *BoardHandler {
-	return &BoardHandler{Service: service}
+func NewBoardHandler(service *services.BoardService, taskService *services.TaskService) *BoardHandler {
+	return &BoardHandler{Service: service, TaskService: taskService}
 }
 
 func (h *BoardHandler) CreateBoard(w http.ResponseWriter, r *http.Request) {
@@ -33,7 +34,6 @@ func (h *BoardHandler) CreateBoard(w http.ResponseWriter, r *http.Request) {
 	board.CreatedAt = now
 	board.UpdatedAt = now
 	board.Completed = false
-	board.Tasks = []models.Task{}
 
 	err := h.Service.CreateBoard(r.Context(), &board)
 	if err != nil {
@@ -82,13 +82,28 @@ func (h *BoardHandler) GetBoardById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Println("BOARD TO RETURN:", boardToReturn)
+	log.Println("BOARD ID:", boardToReturn.ID.Hex())
+	//Find all tasks associated with the board
+	tasks, err := h.TaskService.GetTasksByBoardId(r.Context(), boardToReturn.ID.Hex())
+	if err != nil {
+		http.Error(w, "Unable to get tasks. Check Server", http.StatusInternalServerError)
+		return
+	}
+	log.Println("TASKS:", tasks)
+
+	if tasks == nil {
+		tasks = []models.Task{}
+	}
+
 	response := map[string]interface{}{
 		"success": true,
 		"message": "Board retrieved successfully",
 		"board":   boardToReturn,
+		"tasks":   tasks,
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusFound)
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -106,7 +121,9 @@ func (h *BoardHandler) UpdateBoard(w http.ResponseWriter, r *http.Request) {
 	}
 
 	boardToUpdate.Title = boardUpdateBody.Title
-	log.Println("UPDATING BOARD:", boardToUpdate)
+	boardToUpdate.FromDate = boardUpdateBody.FromDate
+	boardToUpdate.ToDate = boardUpdateBody.ToDate
+
 	now := time.Now().UTC()
 	boardToUpdate.UpdatedAt = now
 

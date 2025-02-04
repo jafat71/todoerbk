@@ -61,6 +61,32 @@ func (s *TaskService) GetTasks(ctx context.Context) ([]models.Task, error) {
 	return tasks, nil
 }
 
+func (s *TaskService) GetTasksByBoardId(ctx context.Context, boardId string) ([]models.Task, error) {
+	// Convertir el string a ObjectID
+	objID, err := primitive.ObjectIDFromHex(boardId)
+	if err != nil {
+		return nil, errors.New("invalid board ID format")
+	}
+
+	var tasks []models.Task
+	// Usar el ObjectID en el filtro
+	cursor, err := s.db.Find(ctx, bson.M{"board_id": objID})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var task models.Task
+		if err := cursor.Decode(&task); err != nil {
+			return nil, err
+		}
+		tasks = append(tasks, task)
+	}
+
+	return tasks, nil
+}
+
 func (s *TaskService) UpdateTask(ctx context.Context, id string, task models.Task) error {
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {

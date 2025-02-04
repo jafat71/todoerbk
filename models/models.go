@@ -49,5 +49,4 @@ type Board struct {
 	FromDate  time.Time          `json:"from_date" bson:"from_date" validate:"required" ` //validar que sea una fecha valida
 	ToDate    time.Time          `json:"to_date" bson:"to_date" validate:"required"`      //validar que sea una fecha valida y posterior a la fecha de inicio
 	Completed bool               `json:"completed" bson:"completed" default:"false"`
-	Tasks     []Task             `json:"tasks" bson:"tasks"` // on Delete Cascade
 }

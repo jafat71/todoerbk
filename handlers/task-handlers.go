@@ -14,11 +14,12 @@ import (
 )
 
 type TaskHandler struct {
-	Service *services.TaskService
+	Service      *services.TaskService
+	BoardService *services.BoardService
 }
 
-func NewTaskHandler(service *services.TaskService) *TaskHandler {
-	return &TaskHandler{Service: service}
+func NewTaskHandler(service *services.TaskService, boardService *services.BoardService) *TaskHandler {
+	return &TaskHandler{Service: service, BoardService: boardService}
 }
 
 func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
@@ -29,19 +30,36 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//TODO: validar que el board exista
+	log.Println("TASK:", task)
 
 	task.ID = primitive.NewObjectID()
 	now := time.Now().UTC()
 	task.CreatedAt = now
 	task.UpdatedAt = now
+
+	// Validar que el Board existe
+	_, err := primitive.ObjectIDFromHex(task.BoardID.Hex())
+	if err != nil {
+		http.Error(w, "Invalid Board ID", http.StatusBadRequest)
+		return
+	}
+
+	board, err := h.BoardService.GetBoardById(r.Context(), task.BoardID.Hex())
+	if err != nil || board == nil {
+		http.Error(w, "Board not found", http.StatusNotFound)
+		return
+	}
+
+	// Establecer valores predeterminados si no están definidos
 	if task.Status == "" {
 		task.Status = models.TODO
 	}
+
 	if task.Priority == "" {
 		task.Priority = models.LOW
 	}
-	err := h.Service.CreateTask(r.Context(), &task)
+
+	err = h.Service.CreateTask(r.Context(), &task)
 	if err != nil {
 		http.Error(w, "Unable to create task. Check Server", http.StatusInternalServerError)
 		return
@@ -108,6 +126,19 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 	taskToUpdate, err := h.Service.GetTaskById(r.Context(), taskId)
 	if err != nil {
 		http.Error(w, "Task to update not found", http.StatusNotFound)
+		return
+	}
+
+	// Validar que el Board existe
+	_, err = primitive.ObjectIDFromHex(taskUpdateBody.BoardID.Hex())
+	if err != nil {
+		http.Error(w, "Invalid Board ID", http.StatusBadRequest)
+		return
+	}
+
+	board, err := h.BoardService.GetBoardById(r.Context(), taskUpdateBody.BoardID.Hex())
+	if err != nil || board == nil {
+		http.Error(w, "Board not found", http.StatusNotFound)
 		return
 	}
 

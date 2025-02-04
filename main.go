@@ -35,14 +35,12 @@ func main() {
 
 	db, client, ctx, cancel := database.SetupMongoDB(mongoURL)
 	defer database.CloseConnection(client, ctx, cancel)
-
-	taskCollection := db.Collection("tasks")
-	taskService := services.NewTaskService(taskCollection)
-	taskController := handlers.NewTaskHandler(taskService)
-
 	boardCollection := db.Collection("boards")
 	boardService := services.NewBoardService(boardCollection)
-	boardController := handlers.NewBoardHandler(boardService)
+	taskCollection := db.Collection("tasks")
+	taskService := services.NewTaskService(taskCollection)
+	boardController := handlers.NewBoardHandler(boardService, taskService)
+	taskController := handlers.NewTaskHandler(taskService, boardService)
 
 	router := mux.NewRouter()
 	apiRouter := router.PathPrefix("/api/v1").Subrouter()
