@@ -28,6 +28,7 @@ func (s *BoardService) DeleteBoard(ctx context.Context, id string) error {
 	if err != nil {
 		return errors.New("invalid board id")
 	}
+
 	_, err = s.db.DeleteOne(ctx, bson.M{"_id": objID})
 	return err
 }

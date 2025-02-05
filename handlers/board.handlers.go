@@ -156,11 +156,16 @@ func (h *BoardHandler) DeleteBoardByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//TODO:Delete all tasks associated with the board
+	//Delete all tasks associated with the board
+	err = h.TaskService.DeleteTasksByBoardId(r.Context(), boardToDelete.ID.Hex())
+	if err != nil {
+		http.Error(w, "Unable to delete tasks. Check Server", http.StatusInternalServerError)
+		return
+	}
 
 	response := map[string]interface{}{
 		"success": true,
-		"message": "Board with id " + boardId + " deleted successfully",
+		"message": "Board with id " + boardId + " and all associated tasks deleted successfully",
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

@@ -95,3 +95,12 @@ func (s *TaskService) UpdateTask(ctx context.Context, id string, task models.Tas
 	_, err = s.db.UpdateOne(ctx, bson.M{"_id": objID}, bson.M{"$set": task})
 	return err
 }
+
+func (s *TaskService) DeleteTasksByBoardId(ctx context.Context, boardId string) error {
+	objID, err := primitive.ObjectIDFromHex(boardId)
+	if err != nil {
+		return errors.New("invalid board ID format")
+	}
+	_, err = s.db.DeleteMany(ctx, bson.M{"board_id": objID})
+	return err
+}
