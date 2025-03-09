@@ -19,6 +19,9 @@ type contextKey string
 
 const TaskKey contextKey = "task"
 const BoardKey contextKey = "board"
+const UserKey contextKey = "user"
+const RegisterRequestKey contextKey = "register_request"
+const LoginRequestKey contextKey = "login_request"
 
 func getAllValidationErrs(err error) []map[string]string {
 	var validationErrors validator.ValidationErrors
@@ -213,6 +216,138 @@ func ValidateBoard(next http.Handler) http.Handler {
 			return
 		}
 
+		next.ServeHTTP(w, r)
+	})
+}
+
+func DecodeUser(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var user models.User
+		err := json.NewDecoder(r.Body).Decode(&user)
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			response := map[string]interface{}{
+				"success": false,
+				"message": "Error in user model validation",
+				"errors":  []string{"Invalid JSON. Verify the data sent"},
+			}
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+		ctx := context.WithValue(r.Context(), UserKey, user)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func ValidateUser(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user, ok := r.Context().Value(UserKey).(models.User)
+		if !ok {
+			http.Error(w, "Invalid User data", http.StatusBadRequest)
+			return
+		}
+		err := validate.Struct(user)
+		if err != nil {
+			responseErrors := getAllValidationErrs(err)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			response := map[string]interface{}{
+				"success": false,
+				"message": "Error in user model validation",
+				"errors":  responseErrors,
+			}
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func DecodeRegisterRequest(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var registerRequest models.RegisterRequest
+		err := json.NewDecoder(r.Body).Decode(&registerRequest)
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			response := map[string]interface{}{
+				"success": false,
+				"message": "Error en validación de registro",
+				"errors":  []string{"JSON inválido. Verifica los datos enviados"},
+			}
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+		ctx := context.WithValue(r.Context(), RegisterRequestKey, registerRequest)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func ValidateRegisterRequest(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		registerRequest, ok := r.Context().Value(RegisterRequestKey).(models.RegisterRequest)
+		if !ok {
+			http.Error(w, "Invalid Register data", http.StatusBadRequest)
+			return
+		}
+		err := validate.Struct(registerRequest)
+		if err != nil {
+			responseErrors := getAllValidationErrs(err)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			response := map[string]interface{}{
+				"success": false,
+				"message": "Error en validación de registro",
+				"errors":  responseErrors,
+			}
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func DecodeLoginRequest(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var loginRequest models.LoginRequest
+		err := json.NewDecoder(r.Body).Decode(&loginRequest)
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			response := map[string]interface{}{
+				"success": false,
+				"message": "Error en validación de login",
+				"errors":  []string{"JSON inválido. Verifica los datos enviados"},
+			}
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+		ctx := context.WithValue(r.Context(), LoginRequestKey, loginRequest)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func ValidateLoginRequest(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		loginRequest, ok := r.Context().Value(LoginRequestKey).(models.LoginRequest)
+		if !ok {
+			http.Error(w, "Invalid Login data", http.StatusBadRequest)
+			return
+		}
+		err := validate.Struct(loginRequest)
+		if err != nil {
+			responseErrors := getAllValidationErrs(err)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			response := map[string]interface{}{
+				"success": false,
+				"message": "Error en validación de login",
+				"errors":  responseErrors,
+			}
+			json.NewEncoder(w).Encode(response)
+			return
+		}
 		next.ServeHTTP(w, r)
 	})
 }

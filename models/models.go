@@ -49,4 +49,14 @@ type Board struct {
 	FromDate  time.Time          `json:"from_date" bson:"from_date" validate:"required" ` //validar que sea una fecha valida
 	ToDate    time.Time          `json:"to_date" bson:"to_date" validate:"required"`      //validar que sea una fecha valida y posterior a la fecha de inicio
 	Completed bool               `json:"completed" bson:"completed" default:"false"`
+	OwnerID   primitive.ObjectID `json:"owner_id" bson:"owner_id" validate:"required"`
+}
+
+type User struct {
+	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	CreatedAt time.Time          `bson:"created_at" json:"created_at"`
+	UpdatedAt time.Time          `bson:"updated_at" json:"updated_at"`
+	Username  string             `json:"username" bson:"username" validate:"required"`
+	Password  string             `json:"-" bson:"password" validate:"required"` //don't return this field in the response
+	Email     string             `json:"email" bson:"email" validate:"required,email"`
 }

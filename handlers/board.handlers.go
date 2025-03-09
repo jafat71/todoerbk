@@ -35,6 +35,13 @@ func (h *BoardHandler) CreateBoard(w http.ResponseWriter, r *http.Request) {
 	board.UpdatedAt = now
 	board.Completed = false
 
+	// userID := r.Context().Value(middlewares.UserIDKey).(string)
+	// board.OwnerID, err = primitive.ObjectIDFromHex(userID)
+	// if err != nil {
+	// 	http.Error(w, "Invalid user ID", http.StatusBadRequest)
+	// 	return
+	// }
+
 	err := h.Service.CreateBoard(r.Context(), &board)
 	if err != nil {
 		http.Error(w, "Unable to create board. Check Server", http.StatusInternalServerError)
@@ -107,6 +114,24 @@ func (h *BoardHandler) GetBoardById(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+func (h *BoardHandler) GetBoardByUserId(w http.ResponseWriter, r *http.Request) {
+	userId := r.Context().Value(middlewares.UserIDKey).(string)
+	boards, err := h.Service.GetBoardsByOwnerID(r.Context(), userId)
+	if err != nil {
+		http.Error(w, "Unable to get boards. Check Server", http.StatusInternalServerError)
+		return
+	}
+
+	response := map[string]interface{}{
+		"success": true,
+		"message": "Boards retrieved successfully",
+		"boards":  boards,
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
+
 func (h *BoardHandler) UpdateBoard(w http.ResponseWriter, r *http.Request) {
 	boardUpdateBody, ok := r.Context().Value(middlewares.BoardKey).(models.Board)
 	if !ok {
@@ -167,6 +192,25 @@ func (h *BoardHandler) DeleteBoardByID(w http.ResponseWriter, r *http.Request) {
 		"success": true,
 		"message": "Board with id " + boardId + " and all associated tasks deleted successfully",
 	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
+
+func (h *BoardHandler) GetBoardsByOwnerID(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(middlewares.UserIDKey).(string)
+	boards, err := h.Service.GetBoardsByOwnerID(r.Context(), userID)
+	if err != nil {
+		http.Error(w, "Unable to get boards. Check Server", http.StatusInternalServerError)
+		return
+	}
+
+	response := map[string]interface{}{
+		"success": true,
+		"message": "Boards retrieved successfully",
+		"boards":  boards,
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)

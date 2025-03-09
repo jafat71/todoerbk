@@ -8,6 +8,7 @@ import (
 
 	"todoerbk/database"
 	"todoerbk/handlers"
+	"todoerbk/middlewares"
 	"todoerbk/routes"
 	"todoerbk/services"
 
@@ -35,21 +36,37 @@ func main() {
 
 	db, client, ctx, cancel := database.SetupMongoDB(mongoURL)
 	defer database.CloseConnection(client, ctx, cancel)
+
 	boardCollection := db.Collection("boards")
-	boardService := services.NewBoardService(boardCollection)
 	taskCollection := db.Collection("tasks")
+	userCollection := db.Collection("users")
+
+	boardService := services.NewBoardService(boardCollection)
 	taskService := services.NewTaskService(taskCollection)
+	userService := services.NewUserService(userCollection)
+	authService := services.NewAuthService(userService)
+
 	boardController := handlers.NewBoardHandler(boardService, taskService)
 	taskController := handlers.NewTaskHandler(taskService, boardService)
+	authController := handlers.NewAuthHandler(authService, userService)
+	userController := handlers.NewUserHandler(userService, boardService, taskService)
+
+	authMiddleware := middlewares.NewAuthMiddleware(authService)
 
 	router := mux.NewRouter()
 	apiRouter := router.PathPrefix("/api/v1").Subrouter()
 
 	taskRouter := apiRouter.PathPrefix("/tasks").Subrouter()
-	routes.TaskRouter(taskRouter, taskController)
+	routes.TaskRouter(taskRouter, taskController, authMiddleware)
 
 	boardRouter := apiRouter.PathPrefix("/boards").Subrouter()
-	routes.BoardRouter(boardRouter, boardController)
+	routes.BoardRouter(boardRouter, boardController, authMiddleware)
+
+	userRouter := apiRouter.PathPrefix("/users").Subrouter()
+	routes.UserRouter(userRouter, userController, authMiddleware)
+
+	authRouter := apiRouter.PathPrefix("/auth").Subrouter()
+	routes.AuthRouter(authRouter, authController)
 
 	router.HandleFunc("/", handlers.Root).Methods("GET")
 

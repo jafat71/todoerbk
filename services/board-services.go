@@ -62,6 +62,24 @@ func (s *BoardService) GetBoards(ctx context.Context) ([]models.Board, error) {
 	return boards, nil
 }
 
+func (s *BoardService) GetBoardsByOwnerID(ctx context.Context, ownerID string) ([]models.Board, error) {
+	var boards []models.Board
+	cursor, err := s.db.Find(ctx, bson.M{"owner_id": ownerID})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var board models.Board
+		if err := cursor.Decode(&board); err != nil {
+			return nil, err
+		}
+		boards = append(boards, board)
+	}
+	return boards, nil
+}
+
 func (s *BoardService) UpdateBoard(ctx context.Context, id string, board models.Board) error {
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
@@ -69,4 +87,13 @@ func (s *BoardService) UpdateBoard(ctx context.Context, id string, board models.
 	}
 	_, err = s.db.UpdateOne(ctx, bson.M{"_id": objID}, bson.M{"$set": board})
 	return err
+}
+
+func (s *BoardService) IsUserOwnerOfBoard(ctx context.Context, boardID string, userID string) (bool, error) {
+	board, err := s.GetBoardById(ctx, boardID)
+	if err != nil {
+		return false, err
+	}
+
+	return board.OwnerID.Hex() == userID, nil
 }
