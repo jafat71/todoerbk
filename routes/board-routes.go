@@ -34,6 +34,14 @@ func BoardRouter(router *mux.Router, boardHandler *handlers.BoardHandler, authMi
 		),
 	).Methods("GET")
 
+	router.Handle("/user/{id}",
+		authMiddleware.RequireAuth(
+			middlewares.ValidateModelIdFromParams(
+				http.HandlerFunc(boardHandler.GetBoardsByUserId),
+			),
+		),
+	).Methods("GET")
+
 	router.Handle("/{id}",
 		authMiddleware.RequireAuth(
 			middlewares.DecodeBoard(

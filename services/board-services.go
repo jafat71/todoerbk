@@ -64,7 +64,13 @@ func (s *BoardService) GetBoards(ctx context.Context) ([]models.Board, error) {
 
 func (s *BoardService) GetBoardsByOwnerID(ctx context.Context, ownerID string) ([]models.Board, error) {
 	var boards []models.Board
-	cursor, err := s.db.Find(ctx, bson.M{"owner_id": ownerID})
+
+	ownerObjectID, err := primitive.ObjectIDFromHex(ownerID)
+	if err != nil {
+		return nil, err
+	}
+
+	cursor, err := s.db.Find(ctx, bson.M{"owner_id": ownerObjectID})
 	if err != nil {
 		return nil, err
 	}

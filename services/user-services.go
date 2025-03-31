@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"time"
 	"todoerbk/models"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -76,18 +77,45 @@ func (s *UserService) GetUserByGoogleID(ctx context.Context, googleID string) (*
 	return &user, nil
 }
 
+func (s *UserService) GetUserByResetCode(ctx context.Context, code string) (*models.User, error) {
+	var user models.User
+	err := s.db.FindOne(ctx, bson.M{
+		"reset_code":     code,
+		"reset_code_exp": bson.M{"$gt": time.Now()},
+	}).Decode(&user)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
 func (s *UserService) UpdateUser(ctx context.Context, id string, user models.User) error {
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return err
 	}
 
+	updateFields := bson.M{
+		"username":   user.Username,
+		"email":      user.Email,
+		"updated_at": time.Now(),
+	}
+
+	if user.Password != "" {
+		updateFields["password"] = user.Password
+	}
+	if user.ResetCode != "" {
+		updateFields["reset_code"] = user.ResetCode
+		updateFields["reset_code_exp"] = user.ResetCodeExp
+	}
+	// If ResetCode is empty string, remove reset code fields
+	if user.ResetCode == "" {
+		updateFields["reset_code"] = nil
+		updateFields["reset_code_exp"] = nil
+	}
+
 	update := bson.M{
-		"$set": bson.M{
-			"username":   user.Username,
-			"email":      user.Email,
-			"updated_at": user.UpdatedAt,
-		},
+		"$set": updateFields,
 	}
 
 	_, err = s.db.UpdateOne(ctx, bson.M{"_id": objectID}, update)

@@ -22,6 +22,8 @@ const BoardKey contextKey = "board"
 const UserKey contextKey = "user"
 const RegisterRequestKey contextKey = "register_request"
 const LoginRequestKey contextKey = "login_request"
+const ForgetRequestKey authKey = "forget_request"
+const ResetPasswordRequestKey authKey = "reset_password_request"
 
 func getAllValidationErrs(err error) []map[string]string {
 	var validationErrors validator.ValidationErrors
@@ -274,7 +276,7 @@ func DecodeRegisterRequest(next http.Handler) http.Handler {
 			response := map[string]interface{}{
 				"success": false,
 				"message": "Error en validación de registro",
-				"errors":  []string{"JSON inválido. Verifica los datos enviados"},
+				"errors":  []string{"Data inválida. Verifica los datos enviados"},
 			}
 			json.NewEncoder(w).Encode(response)
 			return
@@ -318,7 +320,7 @@ func DecodeLoginRequest(next http.Handler) http.Handler {
 			response := map[string]interface{}{
 				"success": false,
 				"message": "Error en validación de login",
-				"errors":  []string{"JSON inválido. Verifica los datos enviados"},
+				"errors":  []string{"Data inválida. Verifica los datos enviados"},
 			}
 			json.NewEncoder(w).Encode(response)
 			return
@@ -348,6 +350,67 @@ func ValidateLoginRequest(next http.Handler) http.Handler {
 			json.NewEncoder(w).Encode(response)
 			return
 		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+// Add these middleware functions
+func DecodeForgetRequest(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var forgetRequest models.ForgetRequest
+		if err := json.NewDecoder(r.Body).Decode(&forgetRequest); err != nil {
+			http.Error(w, "Error al decodificar solicitud", http.StatusBadRequest)
+			return
+		}
+		ctx := context.WithValue(r.Context(), ForgetRequestKey, forgetRequest)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func ValidateForgetRequest(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		forgetRequest, ok := r.Context().Value(ForgetRequestKey).(models.ForgetRequest)
+		if !ok {
+			http.Error(w, "Error al procesar solicitud", http.StatusBadRequest)
+			return
+		}
+
+		validate := validator.New()
+		if err := validate.Struct(forgetRequest); err != nil {
+			http.Error(w, "Datos de solicitud inválidos", http.StatusBadRequest)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func DecodeResetPasswordRequest(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var resetRequest models.ResetPasswordRequest
+		if err := json.NewDecoder(r.Body).Decode(&resetRequest); err != nil {
+			http.Error(w, "Error al decodificar solicitud", http.StatusBadRequest)
+			return
+		}
+		ctx := context.WithValue(r.Context(), ResetPasswordRequestKey, resetRequest)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func ValidateResetPasswordRequest(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resetRequest, ok := r.Context().Value(ResetPasswordRequestKey).(models.ResetPasswordRequest)
+		if !ok {
+			http.Error(w, "Error al procesar solicitud", http.StatusBadRequest)
+			return
+		}
+
+		validate := validator.New()
+		if err := validate.Struct(resetRequest); err != nil {
+			http.Error(w, "Datos de solicitud inválidos", http.StatusBadRequest)
+			return
+		}
+
 		next.ServeHTTP(w, r)
 	})
 }

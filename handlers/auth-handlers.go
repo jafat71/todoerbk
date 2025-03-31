@@ -27,15 +27,15 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	// Continuar con el registro
 	registeredUser, err := h.Service.Register(r.Context(), registerRequest)
 	if err != nil {
-		http.Error(w, "Error al registrar: "+err.Error(), http.StatusBadRequest)
+		http.Error(w, "Error al registrar usuario: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	// Responder
 	response := map[string]interface{}{
-		"success": true,
-		"message": "Usuario registrado correctamente",
-		"user":    registeredUser,
+		"success":  true,
+		"message":  "Usuario registrado correctamente",
+		"response": registeredUser,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -65,5 +65,49 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
+
+func (h *AuthHandler) ForgetPassword(w http.ResponseWriter, r *http.Request) {
+	forgetRequest, ok := r.Context().Value(middlewares.ForgetRequestKey).(models.ForgetRequest)
+	if !ok {
+		http.Error(w, "Error al procesar solicitud", http.StatusInternalServerError)
+		return
+	}
+
+	err := h.Service.RequestPasswordReset(r.Context(), forgetRequest.Email)
+	if err != nil {
+		http.Error(w, "Error: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	response := map[string]interface{}{
+		"success": true,
+		"message": "Si el correo existe, recibirás un código de recuperación",
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
+	resetRequest, ok := r.Context().Value(middlewares.ResetPasswordRequestKey).(models.ResetPasswordRequest)
+	if !ok {
+		http.Error(w, "Error al procesar solicitud", http.StatusInternalServerError)
+		return
+	}
+
+	err := h.Service.ResetPassword(r.Context(), resetRequest.Code, resetRequest.Password)
+	if err != nil {
+		http.Error(w, "Error: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	response := map[string]interface{}{
+		"success": true,
+		"message": "Contraseña actualizada correctamente",
+	}
+
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }

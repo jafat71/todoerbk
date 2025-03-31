@@ -26,4 +26,36 @@ func AuthRouter(router *mux.Router, authHandler *handlers.AuthHandler) {
 		),
 	).Methods("POST")
 
+	router.Handle("/forget-password",
+		middlewares.DecodeForgetRequest(
+			middlewares.ValidateForgetRequest(
+				http.HandlerFunc(authHandler.ForgetPassword),
+			),
+		),
+	).Methods("POST")
+
+	router.Handle("/reset-password",
+		middlewares.DecodeResetPasswordRequest(
+			middlewares.ValidateResetPasswordRequest(
+				http.HandlerFunc(authHandler.ResetPassword),
+			),
+		),
+	).Methods("POST")
+
+	router.Handle("/auth/forget-password",
+		middlewares.DecodeForgetRequest(
+			middlewares.ValidateForgetRequest(
+				http.HandlerFunc(authHandler.ForgetPassword),
+			),
+		),
+	).Methods("POST")
+
+	router.Handle("/auth/reset-password",
+		middlewares.DecodeResetPasswordRequest(
+			middlewares.ValidateResetPasswordRequest(
+				http.HandlerFunc(authHandler.ResetPassword),
+			),
+		),
+	).Methods("POST")
+
 }

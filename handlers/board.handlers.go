@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"time"
 	"todoerbk/middlewares"
@@ -89,15 +88,12 @@ func (h *BoardHandler) GetBoardById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Println("BOARD TO RETURN:", boardToReturn)
-	log.Println("BOARD ID:", boardToReturn.ID.Hex())
 	//Find all tasks associated with the board
 	tasks, err := h.TaskService.GetTasksByBoardId(r.Context(), boardToReturn.ID.Hex())
 	if err != nil {
 		http.Error(w, "Unable to get tasks. Check Server", http.StatusInternalServerError)
 		return
 	}
-	log.Println("TASKS:", tasks)
 
 	if tasks == nil {
 		tasks = []models.Task{}
@@ -114,7 +110,7 @@ func (h *BoardHandler) GetBoardById(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-func (h *BoardHandler) GetBoardByUserId(w http.ResponseWriter, r *http.Request) {
+func (h *BoardHandler) GetBoardsByUserId(w http.ResponseWriter, r *http.Request) {
 	userId := r.Context().Value(middlewares.UserIDKey).(string)
 	boards, err := h.Service.GetBoardsByOwnerID(r.Context(), userId)
 	if err != nil {
@@ -192,25 +188,6 @@ func (h *BoardHandler) DeleteBoardByID(w http.ResponseWriter, r *http.Request) {
 		"success": true,
 		"message": "Board with id " + boardId + " and all associated tasks deleted successfully",
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
-}
-
-func (h *BoardHandler) GetBoardsByOwnerID(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value(middlewares.UserIDKey).(string)
-	boards, err := h.Service.GetBoardsByOwnerID(r.Context(), userID)
-	if err != nil {
-		http.Error(w, "Unable to get boards. Check Server", http.StatusInternalServerError)
-		return
-	}
-
-	response := map[string]interface{}{
-		"success": true,
-		"message": "Boards retrieved successfully",
-		"boards":  boards,
-	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)

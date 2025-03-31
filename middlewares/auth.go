@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"strings"
 	"todoerbk/services"
-
-	"github.com/gorilla/mux"
 )
 
 type authKey string
@@ -53,39 +51,6 @@ func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 		// Continuar con el siguiente handler
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
-}
-
-func (m *AuthMiddleware) RequireOwnership(boardService *services.BoardService) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Obtener userID del contexto (debe haberse establecido por RequireAuth)
-			userID, ok := r.Context().Value(UserIDKey).(string)
-			if !ok {
-				http.Error(w, "No autorizado", http.StatusUnauthorized)
-				return
-			}
-
-			// Obtener boardID de la URL
-			// Nota: ajusta esto según tu router
-			vars := mux.Vars(r)
-			boardID := vars["id"] // o "boardId" según tu configuración de rutas
-
-			if boardID == "" {
-				http.Error(w, "ID de tablero no proporcionado", http.StatusBadRequest)
-				return
-			}
-
-			// Verificar propiedad
-			isOwner, err := boardService.IsUserOwnerOfBoard(r.Context(), boardID, userID)
-			if err != nil || !isOwner {
-				http.Error(w, "Prohibido: no tienes acceso a este tablero", http.StatusForbidden)
-				return
-			}
-
-			// Continuar con el siguiente handler
-			next.ServeHTTP(w, r)
-		})
-	}
 }
 
 func GetUserID(r *http.Request) (string, bool) {
