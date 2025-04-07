@@ -22,6 +22,7 @@ const BoardKey contextKey = "board"
 const UserKey contextKey = "user"
 const RegisterRequestKey contextKey = "register_request"
 const LoginRequestKey contextKey = "login_request"
+const LogoutRequestKey contextKey = "logout_request"
 const ForgetRequestKey authKey = "forget_request"
 const ResetPasswordRequestKey authKey = "reset_password_request"
 
@@ -354,7 +355,34 @@ func ValidateLoginRequest(next http.Handler) http.Handler {
 	})
 }
 
-// Add these middleware functions
+func DecodeLogoutRequest(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var logoutRequest models.LogoutRequest
+		err := json.NewDecoder(r.Body).Decode(&logoutRequest)
+		if err != nil {
+			// Si no hay cuerpo en la solicitud, creamos un LogoutRequest vacío
+			logoutRequest = models.LogoutRequest{}
+		}
+		ctx := context.WithValue(r.Context(), LogoutRequestKey, logoutRequest)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func ValidateLogoutRequest(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, ok := r.Context().Value(LogoutRequestKey).(models.LogoutRequest)
+		if !ok {
+			http.Error(w, "Error al procesar solicitud de logout", http.StatusBadRequest)
+			return
+		}
+
+		// No hay validaciones específicas para LogoutRequest ya que está vacío
+		// Pero mantenemos la estructura para consistencia con otros middlewares
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 func DecodeForgetRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var forgetRequest models.ForgetRequest

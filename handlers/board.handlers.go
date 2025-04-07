@@ -33,14 +33,6 @@ func (h *BoardHandler) CreateBoard(w http.ResponseWriter, r *http.Request) {
 	board.CreatedAt = now
 	board.UpdatedAt = now
 	board.Completed = false
-
-	// userID := r.Context().Value(middlewares.UserIDKey).(string)
-	// board.OwnerID, err = primitive.ObjectIDFromHex(userID)
-	// if err != nil {
-	// 	http.Error(w, "Invalid user ID", http.StatusBadRequest)
-	// 	return
-	// }
-
 	err := h.Service.CreateBoard(r.Context(), &board)
 	if err != nil {
 		http.Error(w, "Unable to create board. Check Server", http.StatusInternalServerError)

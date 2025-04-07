@@ -8,7 +8,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func AuthRouter(router *mux.Router, authHandler *handlers.AuthHandler) {
+func AuthRouter(router *mux.Router, authHandler *handlers.AuthHandler, authMiddleware *middlewares.AuthMiddleware) {
 
 	router.Handle("/register",
 		middlewares.DecodeRegisterRequest(
@@ -26,6 +26,20 @@ func AuthRouter(router *mux.Router, authHandler *handlers.AuthHandler) {
 		),
 	).Methods("POST")
 
+	router.Handle("/logout",
+		middlewares.DecodeLogoutRequest(
+			middlewares.ValidateLogoutRequest(
+				http.HandlerFunc(authHandler.Logout),
+			),
+		),
+	).Methods("POST")
+
+	router.Handle("/check",
+		authMiddleware.CheckAuth(
+			http.HandlerFunc(authHandler.CheckAuthStatus),
+		),
+	).Methods("GET")
+
 	router.Handle("/forget-password",
 		middlewares.DecodeForgetRequest(
 			middlewares.ValidateForgetRequest(
@@ -35,22 +49,6 @@ func AuthRouter(router *mux.Router, authHandler *handlers.AuthHandler) {
 	).Methods("POST")
 
 	router.Handle("/reset-password",
-		middlewares.DecodeResetPasswordRequest(
-			middlewares.ValidateResetPasswordRequest(
-				http.HandlerFunc(authHandler.ResetPassword),
-			),
-		),
-	).Methods("POST")
-
-	router.Handle("/auth/forget-password",
-		middlewares.DecodeForgetRequest(
-			middlewares.ValidateForgetRequest(
-				http.HandlerFunc(authHandler.ForgetPassword),
-			),
-		),
-	).Methods("POST")
-
-	router.Handle("/auth/reset-password",
 		middlewares.DecodeResetPasswordRequest(
 			middlewares.ValidateResetPasswordRequest(
 				http.HandlerFunc(authHandler.ResetPassword),

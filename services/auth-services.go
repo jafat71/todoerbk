@@ -283,3 +283,32 @@ func (s *AuthService) sendResetEmail(toEmail, resetCode string) error {
 
 	return nil
 }
+
+func (s *AuthService) CheckAuthStatus(ctx context.Context, userID string) (*models.AuthStatusResponse, error) {
+	if userID == "" {
+		return &models.AuthStatusResponse{
+			IsAuthenticated: false,
+			Message:         "No hay usuario autenticado",
+		}, nil
+	}
+
+	// Obtener el usuario por ID
+	user, err := s.UserService.GetUserByID(ctx, userID)
+	if err != nil {
+		return &models.AuthStatusResponse{
+			IsAuthenticated: false,
+			Message:         "Usuario no encontrado",
+		}, nil
+	}
+
+	// Eliminar información sensible
+	user.Password = ""
+	user.ResetCode = ""
+	user.ResetCodeExp = time.Time{}
+
+	return &models.AuthStatusResponse{
+		IsAuthenticated: true,
+		User:            *user,
+		Message:         "Usuario autenticado correctamente",
+	}, nil
+}

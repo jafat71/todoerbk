@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 	"todoerbk/middlewares"
 	"todoerbk/models"
 	"todoerbk/services"
@@ -31,11 +32,23 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Responder
+	// Establecer la cookie HTTP-only con el token
+	expiration := time.Until(registeredUser.Expires)
+	cookie := http.Cookie{
+		Name:     middlewares.AuthCookieName,
+		Value:    registeredUser.Token,
+		Expires:  time.Now().Add(expiration),
+		HttpOnly: true,
+		Secure:   true, // Solo enviar por HTTPS
+		SameSite: http.SameSiteStrictMode,
+		Path:     "/",
+	}
+	http.SetCookie(w, &cookie)
+
 	response := map[string]interface{}{
-		"success":  true,
-		"message":  "Usuario registrado correctamente",
-		"response": registeredUser,
+		"success": true,
+		"message": "Usuario registrado correctamente",
+		"user":    registeredUser.User,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -57,10 +70,53 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Establecer la cookie HTTP-only con el token
+	expiration := time.Until(loginResponse.Expires)
+	cookie := http.Cookie{
+		Name:     middlewares.AuthCookieName,
+		Value:    loginResponse.Token,
+		Expires:  time.Now().Add(expiration),
+		HttpOnly: true,
+		Secure:   true, // Solo enviar por HTTPS
+		SameSite: http.SameSiteStrictMode,
+		Path:     "/",
+	}
+	http.SetCookie(w, &cookie)
+
 	response := map[string]interface{}{
-		"success":  true,
-		"message":  "User logged in successfully",
-		"response": loginResponse,
+		"success": true,
+		"message": "User logged in successfully",
+		"user":    loginResponse.User,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
+
+func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	// Obtener LogoutRequest del contexto
+	_, ok := r.Context().Value(middlewares.LogoutRequestKey).(models.LogoutRequest)
+	if !ok {
+		http.Error(w, "Error al procesar datos de logout", http.StatusInternalServerError)
+		return
+	}
+
+	// Eliminar la cookie de autenticación
+	cookie := http.Cookie{
+		Name:     middlewares.AuthCookieName,
+		Value:    "",
+		Expires:  time.Now().Add(-1 * time.Hour), // Establecer una fecha en el pasado
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+		Path:     "/",
+	}
+	http.SetCookie(w, &cookie)
+
+	response := map[string]interface{}{
+		"success": true,
+		"message": "Sesión cerrada correctamente",
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -110,4 +166,31 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+func (h *AuthHandler) CheckAuthStatus(w http.ResponseWriter, r *http.Request) {
+	// Obtener el ID del usuario del contexto (establecido por el middleware de autenticación)
+	userID, ok := middlewares.GetUserID(r)
+	if !ok {
+		// Si no hay ID de usuario, el usuario no está autenticado
+		response := models.AuthStatusResponse{
+			IsAuthenticated: false,
+			Message:         "No hay usuario autenticado",
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// Verificar el estado de autenticación
+	authStatus, err := h.Service.CheckAuthStatus(r.Context(), userID)
+	if err != nil {
+		http.Error(w, "Error al verificar estado de autenticación: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(authStatus)
 }

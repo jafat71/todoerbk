@@ -66,7 +66,7 @@ func main() {
 	routes.UserRouter(userRouter, userController, authMiddleware)
 
 	authRouter := apiRouter.PathPrefix("/auth").Subrouter()
-	routes.AuthRouter(authRouter, authController)
+	routes.AuthRouter(authRouter, authController, authMiddleware)
 
 	router.HandleFunc("/", handlers.Root).Methods("GET")
 
@@ -94,6 +94,8 @@ func main() {
 		gorillaHandlers.AllowedOrigins([]string{"http://localhost:5173"}),
 		gorillaHandlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}),
 		gorillaHandlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
+		gorillaHandlers.AllowCredentials(),
+		gorillaHandlers.ExposedHeaders([]string{"Set-Cookie"}),
 	)
 
 	if err := http.ListenAndServe(port, corsOptions(router)); err != nil {
