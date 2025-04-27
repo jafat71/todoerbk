@@ -69,8 +69,6 @@ func DecodeTask(next http.Handler) http.Handler {
 			return
 		}
 
-		log.Println("TASK:", task)
-
 		ctx := context.WithValue(r.Context(), TaskKey, task)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
