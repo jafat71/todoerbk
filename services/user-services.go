@@ -97,7 +97,6 @@ func (s *UserService) UpdateUser(ctx context.Context, id string, user models.Use
 
 	updateFields := bson.M{
 		"username":   user.Username,
-		"email":      user.Email,
 		"updated_at": time.Now(),
 	}
 
