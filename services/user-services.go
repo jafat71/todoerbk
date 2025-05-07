@@ -130,3 +130,23 @@ func (s *UserService) DeleteUser(ctx context.Context, id string) error {
 	_, err = s.db.DeleteOne(ctx, bson.M{"_id": objectID})
 	return err
 }
+
+func (s *UserService) InactivateUser(ctx context.Context, id string) error {
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.db.UpdateOne(ctx, bson.M{"_id": objectID}, bson.M{"$set": bson.M{"is_active": false}})
+	return err
+}
+
+func (s *UserService) ActivateUser(ctx context.Context, id string) error {
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.db.UpdateOne(ctx, bson.M{"_id": objectID}, bson.M{"$set": bson.M{"is_active": true}})
+	return err
+}

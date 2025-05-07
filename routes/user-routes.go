@@ -26,6 +26,22 @@ func UserRouter(router *mux.Router, userHandler *handlers.UserHandler, authMiddl
 		),
 	).Methods("DELETE")
 
+	router.Handle("/{id}/inactivate",
+		authMiddleware.RequireAuth(
+			middlewares.ValidateModelIdFromParams(
+				http.HandlerFunc(userHandler.InactivateUser),
+			),
+		),
+	).Methods("POST")
+
+	router.Handle("/{id}/activate",
+		authMiddleware.RequireAuth(
+			middlewares.ValidateModelIdFromParams(
+				http.HandlerFunc(userHandler.ActivateUser),
+			),
+		),
+	).Methods("POST")
+
 	router.Handle("/{id}",
 		authMiddleware.RequireAuth(
 			middlewares.ValidateModelIdFromParams(

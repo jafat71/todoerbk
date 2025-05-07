@@ -109,3 +109,35 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
 }
+
+func (h *UserHandler) InactivateUser(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(middlewares.UserIDKey).(string)
+	err := h.Service.InactivateUser(r.Context(), userID)
+	if err != nil {
+		http.Error(w, "Unable to inactivate user. Check Server", http.StatusInternalServerError)
+		return
+	}
+	response := map[string]interface{}{
+		"success": true,
+		"message": "User inactivated successfully",
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
+
+func (h *UserHandler) ActivateUser(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(middlewares.UserIDKey).(string)
+	err := h.Service.ActivateUser(r.Context(), userID)
+	if err != nil {
+		http.Error(w, "Unable to activate user. Check Server", http.StatusInternalServerError)
+		return
+	}
+	response := map[string]interface{}{
+		"success": true,
+		"message": "User activated successfully",
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}

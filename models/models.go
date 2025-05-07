@@ -61,4 +61,5 @@ type User struct {
 	Email        string             `json:"email" bson:"email" validate:"required,email"`
 	ResetCode    string             `json:"-" bson:"reset_code,omitempty"`
 	ResetCodeExp time.Time          `json:"-" bson:"reset_code_exp,omitempty"`
+	IsActive     bool               `json:"is_active" bson:"is_active" default:"true"`
 }
