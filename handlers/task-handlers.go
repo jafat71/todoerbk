@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"time"
 	"todoerbk/middlewares"
@@ -29,8 +28,6 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unable to process task. Check Server", http.StatusInternalServerError)
 		return
 	}
-
-	log.Println("TASK:", task)
 
 	task.ID = primitive.NewObjectID()
 	now := time.Now().UTC()
@@ -149,7 +146,6 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 	if taskUpdateBody.Priority != "" {
 		taskToUpdate.Priority = taskUpdateBody.Priority
 	}
-	log.Println("UPDATING TASK:", taskToUpdate)
 	now := time.Now().UTC()
 	taskToUpdate.UpdatedAt = now
 

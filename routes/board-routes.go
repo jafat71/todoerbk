@@ -47,9 +47,17 @@ func BoardRouter(router *mux.Router, boardHandler *handlers.BoardHandler, authMi
 			middlewares.DecodeBoard(
 				middlewares.ValidateBoard(
 					middlewares.ValidateModelIdFromParams(
-						http.HandlerFunc(boardHandler.UpdateBoard),
+						http.HandlerFunc(boardHandler.UpdateBoardDetails),
 					),
 				),
+			),
+		),
+	).Methods("PUT")
+
+	router.Handle("/{id}/status",
+		authMiddleware.RequireAuth(
+			middlewares.ValidateModelIdFromParams(
+				http.HandlerFunc(boardHandler.UpdateBoardStatus),
 			),
 		),
 	).Methods("PUT")

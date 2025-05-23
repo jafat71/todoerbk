@@ -120,7 +120,7 @@ func (h *BoardHandler) GetBoardsByUserId(w http.ResponseWriter, r *http.Request)
 	json.NewEncoder(w).Encode(response)
 }
 
-func (h *BoardHandler) UpdateBoard(w http.ResponseWriter, r *http.Request) {
+func (h *BoardHandler) UpdateBoardDetails(w http.ResponseWriter, r *http.Request) {
 	boardUpdateBody, ok := r.Context().Value(middlewares.BoardKey).(models.Board)
 	if !ok {
 		http.Error(w, "Unable to process board to update. Check Server", http.StatusInternalServerError)
@@ -149,6 +149,36 @@ func (h *BoardHandler) UpdateBoard(w http.ResponseWriter, r *http.Request) {
 	response := map[string]interface{}{
 		"success": true,
 		"message": "Board updated successfully",
+		"board":   boardToUpdate,
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
+
+func (h *BoardHandler) UpdateBoardStatus(w http.ResponseWriter, r *http.Request) {
+	boardId := mux.Vars(r)["id"]
+	boardToUpdate, err := h.Service.GetBoardById(r.Context(), boardId)
+	if err != nil {
+		http.Error(w, "Board to update not found", http.StatusNotFound)
+		return
+	}
+
+	boardToUpdate.Completed = !boardToUpdate.Completed
+
+	now := time.Now().UTC()
+	boardToUpdate.UpdatedAt = now
+
+	err = h.Service.UpdateBoard(r.Context(), boardId, *boardToUpdate)
+
+	if err != nil {
+		http.Error(w, "Board to update not found", http.StatusNotFound)
+		return
+	}
+
+	response := map[string]interface{}{
+		"success": true,
+		"message": "Board completed updated successfully",
 		"board":   boardToUpdate,
 	}
 	w.Header().Set("Content-Type", "application/json")

@@ -25,8 +25,6 @@ func SetupMongoDB(mongoURL string) (*mongo.Database, *mongo.Client, context.Cont
 		log.Fatalf("No se pudo hacer ping al servidor MongoDB: %v", err)
 	}
 
-	log.Println("-*-*-*-*-*-Conexión exitosa a MongoDB-*-*-*-*-")
-
 	db := client.Database("todoer")
 
 	return db, client, ctx, cancel
@@ -38,6 +36,5 @@ func CloseConnection(client *mongo.Client, context context.Context, cancel conte
 		if err := client.Disconnect(context); err != nil {
 			panic(err)
 		}
-		log.Println("/// ---* Close connection MONGO *--- ///")
 	}()
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log"
 	"net/http"
 	"todoerbk/models"
 
@@ -76,14 +75,11 @@ func DecodeTask(next http.Handler) http.Handler {
 
 func ValidateTask(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Println("VALIDATING TASK")
-		log.Println("CONTEXT Entity sent:", r.Context().Value(TaskKey))
 		task, ok := r.Context().Value(TaskKey).(models.Task)
 		if !ok {
 			http.Error(w, "Invalid Task data", http.StatusBadRequest)
 			return
 		}
-		log.Println("TASK:", task)
 
 		err := validate.Struct(task)
 		if err != nil {
